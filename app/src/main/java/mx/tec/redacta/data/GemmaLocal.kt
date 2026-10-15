@@ -8,6 +8,7 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
+import com.google.ai.edge.litertlm.SamplerConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -76,6 +77,9 @@ class GemmaLocal @Inject constructor(
         val motor = checkNotNull(motor) { "El modelo todavía no está cargado" }
         val config = ConversationConfig(
             systemInstruction = pedido.instruccion?.let { Contents.of(it) },
+            // El ejemplo entra como si fuera una pregunta que el modelo ya contestó.
+            initialMessages = pedido.ejemplo?.let { listOf(Message.user(it.pregunta), Message.model(it.respuesta)) }.orEmpty(),
+            samplerConfig = pedido.temperatura?.let { SamplerConfig(topK = 40, topP = 0.95, temperature = it) },
             maxOutputToken = MAX_TOKENS
         )
         // Una conversación por pedido: sin historia, cada texto se trata solo.
@@ -93,7 +97,7 @@ class GemmaLocal @Inject constructor(
         contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
 
     companion object {
-        const val ARCHIVO = "gemma3-1b-it-int4.litertlm"
+        const val ARCHIVO = "Gemma3-1B-IT_multi-prefill-seq_q4_ekv4096.litertlm"
 
         /** Un tope de seguridad. Que conteste corto lo pide la instrucción, no este número. */
         const val MAX_TOKENS = 256
